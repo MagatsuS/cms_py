@@ -1,0 +1,15 @@
+# Minimal requirements for testing (no compilation needed)
+
+# Core (Required)
+requests==2.31.0
+python-dotenv==1.0.1
+
+# System monitoring
+psutil==5.9.8
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2024.1
+
+# Image processing (optional, but works on Windows)
+Pillow==10.2.0
