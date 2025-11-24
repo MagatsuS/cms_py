@@ -1,0 +1,381 @@
+# CMS_PY Cursor Rules
+
+## Project Context
+
+This is a Python-based Digital Signage Content Management System for managing Raspberry Pi players that control TV screens. It's designed to be compatible with the Laravel-based cms_dupe system.
+
+## Core Principles
+
+1. **API Compatibility First**: All API endpoints must maintain compatibility with cms_dupe (Laravel) system
+2. **Raspberry Pi Focus**: Code must run efficiently on Raspberry Pi hardware
+3. **Offline-First**: System must function without constant internet connectivity
+4. **Real-time Updates**: Support WebSocket connections for live player status
+5. **Multi-tenant**: Support multiple organizations/users with proper isolation
+
+## Technology Stack
+
+### Backend
+- Python 3.10+
+- Django or FastAPI (choose based on project needs)
+- PostgreSQL/MySQL for database
+- Redis for caching and queues
+- Celery for background tasks
+
+### Storage
+- DigitalOcean Spaces (S3-compatible)
+- boto3 for S3 operations
+
+### Authentication
+- JWT tokens or Token-based auth
+- Compatible with Laravel Sanctum format
+
+### Raspberry Pi Player
+- Python 3.x
+- Hardware video acceleration (omxplayer/VLC)
+- GPIO integration
+- HDMI-CEC for TV control
+
+## Code Style
+
+### Python
+- Follow PEP 8 style guide
+- Use type hints for all functions
+- Maximum line length: 100 characters
+- Use black for code formatting
+- Use isort for import sorting
+
+### Naming Conventions
+- Classes: PascalCase (e.g., `PlayerController`, `AssetModel`)
+- Functions/methods: snake_case (e.g., `get_player_status`, `deploy_content`)
+- Constants: UPPER_SNAKE_CASE (e.g., `MAX_UPLOAD_SIZE`, `DEFAULT_DURATION`)
+- Files: snake_case (e.g., `player_service.py`, `deployment_controller.py`)
+
+### Documentation
+- Use docstrings for all classes and functions
+- Include type hints in docstrings
+- Document API endpoints with OpenAPI/Swagger
+- Keep README and PROJECT_OVERVIEW.md updated
+
+## Project Structure
+
+```
+app/
+├── api/              # API endpoints (FastAPI routes or Django views)
+├── models/           # Database models (ORM)
+├── services/         # Business logic (service layer)
+├── controllers/      # Request handlers
+├── middleware/       # Auth, logging, CORS
+├── schemas/          # Pydantic schemas for validation
+├── utils/            # Helper functions
+└── exceptions/       # Custom exceptions
+```
+
+## Database Guidelines
+
+### Models
+- Use proper relationships (ForeignKey, ManyToMany)
+- Add indexes for frequently queried fields
+- Include timestamps (created_at, updated_at)
+- Use soft deletes where appropriate
+- Match cms_dupe table structure for compatibility
+
+### Migrations
+- Create migrations for all schema changes
+- Never edit existing migrations
+- Use descriptive migration names
+- Test migrations in both directions (up/down)
+
+### Key Models to Implement
+- User, Role, Permission (authentication)
+- Asset, Playlist, PlaylistAsset (content)
+- Player, Group, Deployment (device management)
+- Schedule, Layout, LayoutZone (scheduling & layouts)
+- License, Subscription (licensing)
+- ActivityLog (audit trail)
+
+## API Design
+
+### RESTful Principles
+- Use proper HTTP methods (GET, POST, PUT, DELETE)
+- Return appropriate status codes
+- Use JSON for all responses
+- Include pagination for list endpoints
+- Implement filtering, sorting, searching
+
+### Authentication
+- Require authentication for all endpoints except public ones
+- Use Bearer token in Authorization header
+- Implement token refresh mechanism
+- Support API key authentication for Raspberry Pi players
+
+### Response Format
+```json
+{
+  "success": true,
+  "data": {...},
+  "message": "Operation successful",
+  "errors": []
+}
+```
+
+### Error Handling
+```json
+{
+  "success": false,
+  "data": null,
+  "message": "Error message",
+  "errors": ["Detailed error 1", "Detailed error 2"]
+}
+```
+
+## Security Guidelines
+
+1. **Input Validation**: Validate all user input using schemas
+2. **SQL Injection**: Use ORM, never raw SQL with user input
+3. **XSS Protection**: Sanitize all output
+4. **CSRF Protection**: Implement CSRF tokens for web forms
+5. **File Upload**: Validate file types and sizes, scan for malware
+6. **Rate Limiting**: Implement rate limits on API endpoints
+7. **Password Security**: Use bcrypt/argon2 for password hashing
+8. **Environment Variables**: Store secrets in .env, never commit them
+
+## File Upload Guidelines
+
+### Allowed File Types
+- **Images**: PNG, JPEG, JPG, GIF
+- **Videos**: MP4, WebM, AVI
+- **Documents**: HTML, PDF
+
+### Size Limits
+- Images: 10MB max
+- Videos: 500MB max
+- HTML: 5MB max
+
+### Storage
+- Upload to DigitalOcean Spaces
+- Generate thumbnails for videos
+- Use CDN URLs for serving
+- Implement signed URLs for private content
+
+## Performance Guidelines
+
+1. **Database Queries**
+   - Use select_related() and prefetch_related() to avoid N+1 queries
+   - Add indexes for foreign keys and frequently filtered fields
+   - Use database-level aggregation
+
+2. **Caching**
+   - Cache player status (5-minute TTL)
+   - Cache user permissions
+   - Cache frequently accessed content
+   - Use Redis for session storage
+
+3. **Background Jobs**
+   - Use Celery for long-running tasks
+   - Process deployments asynchronously
+   - Generate thumbnails in background
+   - Send notifications asynchronously
+
+4. **API Response Times**
+   - Target: <200ms for list endpoints
+   - Target: <100ms for detail endpoints
+   - Implement pagination (max 100 items per page)
+
+## Testing Guidelines
+
+### Unit Tests
+- Test all service layer functions
+- Test model methods
+- Mock external dependencies
+- Aim for 80%+ code coverage
+
+### Integration Tests
+- Test API endpoints
+- Test authentication flows
+- Test file uploads
+- Test deployment process
+
+### Test Structure
+```python
+def test_create_playlist():
+    """Test creating a new playlist"""
+    # Arrange
+    user = create_test_user()
+    data = {"name": "Test Playlist"}
+
+    # Act
+    response = client.post("/api/playlists", json=data, headers=auth_headers(user))
+
+    # Assert
+    assert response.status_code == 201
+    assert response.json()["data"]["name"] == "Test Playlist"
+```
+
+## Raspberry Pi Player Guidelines
+
+### Communication
+- Poll server every 30 seconds for updates
+- Use WebSocket for real-time commands
+- Handle offline mode gracefully
+- Implement exponential backoff for retries
+
+### Content Playback
+- Preload next content during current playback
+- Use hardware acceleration for video
+- Support seamless transitions
+- Handle corrupted files gracefully
+
+### System Integration
+- HDMI-CEC for TV power control
+- GPIO for buttons/sensors
+- Monitor system health (CPU, memory, temp)
+- Auto-restart on crashes
+
+### Updates
+- Check for updates daily
+- Download updates in background
+- Apply updates during idle time
+- Rollback on failure
+
+## Logging Guidelines
+
+### Log Levels
+- **DEBUG**: Detailed diagnostic info
+- **INFO**: General informational messages
+- **WARNING**: Warning messages (deprecated features, etc.)
+- **ERROR**: Error messages (recoverable)
+- **CRITICAL**: Critical errors (system failures)
+
+### What to Log
+- API requests/responses (excluding sensitive data)
+- Database queries (in development)
+- Background job execution
+- Player status changes
+- Deployment events
+- Authentication attempts
+- Errors and exceptions
+
+### What NOT to Log
+- Passwords or tokens
+- Credit card numbers
+- Personal identification numbers
+- API keys
+
+## Deployment Guidelines
+
+### Environment
+- Use environment variables for configuration
+- Separate settings for dev/staging/production
+- Use Docker for consistent environments
+
+### Dependencies
+- Pin all package versions in requirements.txt
+- Use virtual environments
+- Document system dependencies
+
+### Database
+- Always backup before migrations
+- Test migrations on staging first
+- Use connection pooling
+- Monitor slow queries
+
+## Documentation Requirements
+
+### Code Documentation
+- Docstrings for all public functions/classes
+- Type hints for all parameters and return values
+- Inline comments for complex logic only
+
+### API Documentation
+- Use OpenAPI/Swagger for API docs
+- Include request/response examples
+- Document all error codes
+- Keep docs in sync with code
+
+### README Updates
+- Document setup instructions
+- List all environment variables
+- Include troubleshooting section
+- Document deployment process
+
+## Git Workflow
+
+### Commit Messages
+- Use conventional commits format
+- Format: `type(scope): description`
+- Types: feat, fix, docs, style, refactor, test, chore
+- Example: `feat(player): add HDMI-CEC support`
+
+### Branch Naming
+- feature/description (e.g., feature/player-registration)
+- fix/description (e.g., fix/deployment-error)
+- refactor/description (e.g., refactor/auth-service)
+
+### Pull Requests
+- Include description of changes
+- Link related issues
+- Add screenshots for UI changes
+- Ensure all tests pass
+- Request code review
+
+## Compatibility with cms_dupe
+
+### Database Schema
+- Match table names from cms_dupe
+- Use same column names and types
+- Maintain foreign key relationships
+- Keep same indexes
+
+### API Endpoints
+- Match endpoint URLs
+- Use same request/response formats
+- Maintain same authentication method
+- Support same query parameters
+
+### File Storage
+- Use same DigitalOcean Spaces bucket
+- Use same file naming convention
+- Generate same thumbnail sizes
+- Use same CDN configuration
+
+## Common Pitfalls to Avoid
+
+1. Don't hardcode URLs or paths
+2. Don't commit sensitive data (.env files)
+3. Don't skip input validation
+4. Don't ignore error handling
+5. Don't create God classes (keep classes focused)
+6. Don't use SELECT * in queries
+7. Don't expose internal IDs in URLs (use UUIDs)
+8. Don't trust client-side validation alone
+9. Don't ignore database migrations
+10. Don't skip testing
+
+## Performance Targets
+
+- API response time: <200ms (p95)
+- Database query time: <50ms (p95)
+- File upload: Support up to 500MB
+- Concurrent users: 1000+
+- Concurrent players: 10,000+
+- Deployment time: <30 seconds for 100 players
+
+## Reference Implementation
+
+The Laravel-based cms_dupe project at `C:\laragon\www\cms_dupe` serves as the reference implementation. When in doubt:
+1. Check how it's implemented in cms_dupe
+2. Maintain API compatibility
+3. Match database schema
+4. Use similar architecture patterns
+
+## Questions or Clarifications
+
+If you're unsure about:
+- Architecture decisions → Check cms_dupe implementation
+- API design → Refer to existing endpoints
+- Database schema → Match cms_dupe tables
+- Business logic → Consult PROJECT_OVERVIEW.md
+
+---
+
+**Remember**: This is a production system managing real hardware in real locations. Code quality, reliability, and performance are critical. When in doubt, ask for clarification before implementing.
