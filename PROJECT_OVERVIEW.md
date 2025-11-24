@@ -1,228 +1,260 @@
-# CMS_PY - Digital Signage Content Management System
+# CMS_PY - Raspberry Pi Digital Signage Player
 
 ## Project Overview
 
-CMS_PY is a Python-based Digital Signage Content Management System designed for managing TV screens and digital displays via Raspberry Pi players. This project is inspired by and aims to be compatible with the Laravel-based cms_dupe system.
+CMS_PY is a **Python-based player application** designed to run on **Raspberry Pi** devices. It connects to the **cms_dupe** backend (Laravel CMS) and displays digital signage content on TV screens.
+
+**Important:** This is NOT a full CMS backend. It's only the player application that runs on Raspberry Pi hardware.
 
 ## Purpose
 
-This system enables organizations to:
-- Upload and manage media content (images, videos, HTML)
-- Create playlists and schedules
-- Deploy content to Raspberry Pi players controlling TV screens
-- Monitor player status in real-time
-- Manage multiple locations and screen groups
+This application enables a Raspberry Pi to:
+- Authenticate with cms_dupe using a unique player code (format: `PLR-XXXXXXXX`)
+- Download and cache media content (images, videos, HTML)
+- Display content in fullscreen on connected TV screens
+- Report playback status back to cms_dupe
+- Automatically sync when new content is deployed
 
-## Target Use Cases
+## Architecture
 
-- **Retail Chains**: Menu boards, promotions, sales announcements
-- **Corporate Communications**: Internal announcements, dashboards, metrics
-- **Digital Billboards**: Advertising campaigns with scheduling
-- **Information Displays**: Airport info, transit displays, wayfinding
-- **Event Management**: Dynamic displays for conferences and festivals
-- **Hospitality**: Hotel lobby displays, restaurant menus
+```
+┌─────────────────┐         API          ┌──────────────────┐
+│   cms_dupe      │◄─────────────────────►│  Raspberry Pi    │
+│   (Laravel)     │      (HTTP/REST)      │  + cms_py        │
+│   Backend       │                       │  (Python Player) │
+└─────────────────┘                       └────────┬─────────┘
+                                                   │ HDMI
+                                                   ▼
+                                             ┌──────────┐
+                                             │  TV      │
+                                             │  Screen  │
+                                             └──────────┘
+```
 
-## Core Workflow
+## Workflow
 
-1. **Upload** - Media files to cloud storage (DigitalOcean Spaces)
-2. **Manage** - Organize content into playlists, groups, and schedules
-3. **Deploy** - Push content to Raspberry Pi players controlling TV screens
+### 1. Initial Setup
+- Install cms_py on Raspberry Pi
+- Configure player code from cms_dupe
+- Run application
+
+### 2. Authentication
+- Player authenticates with cms_dupe using player code `PLR-XXXXXXXX`
+- Receives API token for subsequent requests
+- Gets player configuration (name, location, settings)
+
+### 3. Content Synchronization
+- Fetches assigned playlist from cms_dupe
+- Downloads all media files to local cache
+- Stores files for offline playback
+
+### 4. Content Playback
+- Displays content in fullscreen loop
+- Respects duration settings for each asset
+- Handles images, videos, and HTML content
+- Seamless transitions between assets
+
+### 5. Status Reporting
+- Sends heartbeat every 30 seconds
+- Reports current playback status
+- Checks for playlist updates
+- Logs playback analytics
 
 ## Technology Stack
 
-### Backend (Target)
-- **Framework**: Django/FastAPI (Python 3.10+)
-- **Database**: PostgreSQL/MySQL
-- **API**: RESTful API compatible with cms_dupe
-- **File Storage**: DigitalOcean Spaces (S3-compatible)
-- **Authentication**: JWT/Token-based auth
-- **Real-time**: WebSocket integration (compatible with Laravel Reverb)
+### Core
+- **Python 3.10+** - Main programming language
+- **requests** - HTTP client for API communication
+- **python-dotenv** - Environment configuration
 
-### Raspberry Pi Player
-- **Language**: Python 3.x
-- **Display**: Full-screen kiosk mode
-- **Video**: Hardware accelerated playback
-- **Integration**: HDMI-CEC (TV power control), GPIO
-- **Communication**: REST API + WebSocket
-- **Updates**: OTA (Over-the-air) updates
+### Media Playback (Planned)
+- **python-vlc** - Video playback
+- **PyQt5** - GUI framework for fullscreen display
+- **Pillow** - Image processing
 
-## Key Features (Planned)
+### System
+- **psutil** - System monitoring (CPU, memory, disk)
 
-### Content Management
-- Media asset upload and organization
-- Asset validity periods
-- Cloud storage integration
-- Thumbnail generation
-- Asset categorization
-
-### Playlist System
-- Playlist creation and management
-- Drag-and-drop ordering
-- Asset duration configuration
-- Multiple layout support
-- Default playlist assignment
-
-### Display Layouts
-- Multi-zone layout builder
-- HD and Full HD support
-- Portrait/landscape orientation
-- Zone-based asset assignment
-- Custom layout templates
-
-### Player Management
-- Player registration (QR code + manual)
-- Real-time status monitoring
-- Remote configuration
-- Screenshot capture
-- Location tracking
-- Player grouping
-
-### Scheduling System
-- Date-range scheduling
-- Time-window scheduling
-- Priority-based ordering
-- Default playlist fallback
-- Advanced calendar integration
-
-### Deployment System
-- One-click deployment
-- Group-based batch deployment
-- Background progress tracking
-- Seamless content transition
-- Offline content caching
-
-### Analytics & Reporting
-- Player statistics dashboard
-- Deployment history
-- Asset usage analytics
-- Activity logs (audit trail)
-- CSV/Excel export
-
-### User Management
-- Role-based access control (RBAC)
-- Multi-tier user hierarchy
-- Activity logging
-- Password management
-- User permissions
-
-### Subscription & Licensing
-- Tiered subscription plans
-- License key management
-- Payment integration
-- Usage limit enforcement
-
-## Database Models (Planned)
-
-### Core Models
-- **Asset** - Media files
-- **Playlist** - Content playlists
-- **PlaylistAsset** - Playlist-asset relationships
-- **Group** - Player groups
-- **Schedule** - Scheduling rules
-- **Layout** - Display layouts
-- **LayoutZone** - Layout zones
-- **Player** - Registered devices
-- **Deployment** - Deployment records
-- **User** - User accounts
-- **Role** - User roles
-- **Permission** - Permissions
-- **License** - Player licenses
-- **Subscription** - User subscriptions
-- **Campaign** - Marketing campaigns
-- **ActivityLog** - Audit trail
-
-## API Compatibility
-
-This project aims to maintain API compatibility with the cms_dupe Laravel system to ensure:
-- Raspberry Pi players can work with both systems
-- Smooth migration path
-- Shared infrastructure (storage, database)
-- Consistent authentication
-
-## Project Structure (Target)
+## Project Structure
 
 ```
 cms_py/
 ├── app/
-│   ├── api/              # API endpoints
-│   ├── models/           # Database models
-│   ├── services/         # Business logic
-│   ├── controllers/      # Request handlers
-│   ├── middleware/       # Authentication, logging
-│   └── utils/            # Helper functions
-├── config/               # Configuration files
-├── database/
-│   ├── migrations/       # Database migrations
-│   └── seeders/          # Data seeders
-├── tests/                # Unit and integration tests
-├── storage/              # File storage
-├── raspberry-pi-player/  # Raspberry Pi client (Python)
-├── docs/                 # Documentation
-├── requirements.txt      # Python dependencies
-└── README.md
+│   ├── __init__.py
+│   ├── api_client.py        # CMS API communication
+│   ├── cache_manager.py     # Media file caching
+│   └── player.py            # Main playback logic
+├── storage/
+│   ├── cache/               # Cached media files
+│   └── logs/                # Application logs
+├── .env                     # Configuration (create from .env.example)
+├── .env.example             # Configuration template
+├── main.py                  # Application entry point
+├── requirements.txt         # Python dependencies
+└── README.md                # Setup instructions
 ```
 
-## Development Status
+## Key Features
 
-**Status**: Initial Development
+### Implemented
+✅ Player authentication with unique code
+✅ API client for cms_dupe communication
+✅ Media file caching system
+✅ Playlist download and management
+✅ Heartbeat reporting
+✅ Playback status logging
+✅ Automatic playlist synchronization
+✅ Deployment checking
+✅ Offline caching support
 
-This project is currently being set up and will progressively implement features from the cms_dupe reference system.
+### To Be Implemented
+- [ ] Actual fullscreen media display (currently placeholder)
+- [ ] VLC video playback integration
+- [ ] Image slideshow with transitions
+- [ ] HTML content rendering
+- [ ] HDMI-CEC TV control
+- [ ] System health monitoring
+- [ ] Auto-start on boot (systemd service)
+- [ ] Web configuration interface
+- [ ] OTA updates
 
-## Development Phases
+## API Integration
 
-### Phase 1: Foundation
-- Project structure setup
-- Database models
-- Basic CRUD operations
-- Authentication system
+CMS_PY connects to cms_dupe's REST API:
 
-### Phase 2: Core Features
-- Asset management
-- Playlist system
-- Player registration
-- Basic deployment
+### Base URL
+```
+http://your-cms-dupe-url/api/v1
+```
 
-### Phase 3: Advanced Features
-- Scheduling system
-- Layout builder
-- Real-time updates
-- Analytics
+### Key Endpoints Used
 
-### Phase 4: Integration
-- Payment gateway
-- Subscription system
-- Offline sync
-- HDMI-CEC control
+| Endpoint | Method | Purpose |
+|----------|--------|---------|
+| `/player/authenticate` | POST | Authenticate with player code |
+| `/player/heartbeat` | POST | Send status updates |
+| `/player/playlist` | GET | Get current playlist and assets |
+| `/player/deployments/pending` | GET | Check for new deployments |
+| `/player/playback/report` | POST | Report playback activity |
+| `/player/info` | GET | Get player configuration |
+
+### Authentication Flow
+
+```python
+# 1. Authenticate
+POST /api/v1/player/authenticate
+{
+  "code": "PLR-XXXXXXXX"
+}
+
+# Response
+{
+  "success": true,
+  "data": {
+    "player": {...},
+    "token": "1|xxxxxxxxxxxxx"
+  }
+}
+
+# 2. Use token for all requests
+Headers: {
+  "Authorization": "Bearer 1|xxxxxxxxxxxxx"
+}
+```
 
 ## Configuration
 
-### Environment Variables Required
-- **Database**: Connection details
-- **Storage**: DigitalOcean Spaces credentials
-- **API**: Secret keys, URLs
-- **Payment**: Gateway credentials (optional)
-- **WebSocket**: Real-time update settings
+### Environment Variables (.env)
 
-## Getting Started
+```bash
+# CMS API Configuration
+CMS_API_URL=http://localhost/cms_dupe/public/api/v1
+PLAYER_CODE=PLR-XXXXXXXX
+PLAYER_NAME=My TV Screen
+PLAYER_LOCATION=Office Lobby
 
-(To be added as development progresses)
+# Display Settings
+SCREEN_RESOLUTION=1920x1080
+FULLSCREEN=True
 
-## Documentation
+# Cache Settings
+CACHE_DIR=storage/cache
+MAX_CACHE_SIZE_MB=2000
 
-- See cms_dupe project at `C:\laragon\www\cms_dupe` for reference implementation
-- API documentation: (To be added)
-- Player setup guide: (To be added)
+# Heartbeat
+HEARTBEAT_INTERVAL=30
 
-## Contributing
+# Debug
+DEBUG=False
+LOG_LEVEL=INFO
+```
 
-(To be added)
+## Setup Requirements
 
-## License
+### Hardware
+- **Raspberry Pi 4** (recommended) or Pi 3B+
+- **8GB+ MicroSD Card** for OS
+- **USB Drive or External Storage** (optional, for large cache)
+- **HDMI Cable** to connect to TV
+- **Internet Connection** (WiFi or Ethernet)
 
-(To be determined)
+### Software
+- **Raspberry Pi OS** (Bullseye or newer)
+- **Python 3.10+**
+- **VLC Media Player** (for video playback)
+
+## Installation
+
+See **README.md** for detailed setup instructions.
+
+## Use Cases
+
+### Typical Deployment
+1. Admin creates player in cms_dupe web interface
+2. Gets player code (e.g., `PLR-AB12CD34`)
+3. Installs cms_py on Raspberry Pi
+4. Enters player code
+5. Application authenticates and starts displaying content
+
+### One Raspberry Pi = One Player = One TV
+Each Raspberry Pi device:
+- Has a unique player code
+- Connects to one TV screen via HDMI
+- Displays its assigned playlist
+- Operates independently from other players
+
+## Development Status
+
+**Status**: Core features implemented, media playback to be finalized
+
+**Current Phase**: Foundation complete, ready for media player integration
+
+**Next Steps**:
+1. Implement actual VLC video playback
+2. Add PyQt5 fullscreen image display
+3. Add HTML rendering with WebView
+4. Test on actual Raspberry Pi hardware
+5. Implement HDMI-CEC control
+6. Create systemd service for auto-start
+
+## Reference Backend
+
+This player connects to **cms_dupe** at:
+```
+C:\laragon\www\cms_dupe
+```
+
+API documentation from cms_dupe should be consulted for any API changes or additions.
+
+## Notes
+
+- **No Raspberry Pi Required for Development**: You can test on Windows/Mac/Linux
+- **Offline Support**: Once content is cached, player works without internet
+- **Automatic Updates**: When cms_dupe deploys new content, player auto-syncs
+- **Lightweight**: Designed to run efficiently on Raspberry Pi hardware
 
 ---
 
-**Project Status**: In Development
+**Project Type**: Raspberry Pi Player Application
+**Backend**: cms_dupe (Laravel)
 **Last Updated**: 2025-11-24
-**Reference Project**: cms_dupe (Laravel)

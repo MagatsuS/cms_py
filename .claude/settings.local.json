@@ -6,7 +6,8 @@
       "Bash(cat:*)",
       "Bash(git fetch:*)",
       "Bash(dir:*)",
-      "Bash(xargs ls:*)"
+      "Bash(xargs ls:*)",
+      "Bash(where:*)"
     ],
     "deny": [],
     "ask": []

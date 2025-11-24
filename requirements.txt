@@ -1,0 +1,18 @@
+# Core
+requests==2.31.0
+python-dotenv==1.0.1
+
+# Media Player
+python-vlc==3.0.20123
+pygame==2.5.2
+Pillow==10.2.0
+
+# System
+psutil==5.9.8
+
+# GUI (for fullscreen display)
+PyQt5==5.15.10
+
+# Utilities
+python-dateutil==2.8.2
+pytz==2024.1
