@@ -34,11 +34,61 @@ def get_player_url():
     """Get player URL from environment or user input"""
     player_url = os.getenv('PLAYER_URL', '')
 
-    if not player_url:
-        # Construct from parts
-        cms_url = os.getenv('CMS_URL', 'http://127.0.0.1:8000')
-        player_code = os.getenv('PLAYER_CODE', 'PLAYER-PJHZJN')
-        player_url = f"{cms_url}/player/{player_code}"
+    if not player_url or player_url == 'http://127.0.0.1:8000/player/PLAYER-XXXXXXXX':
+        # First time setup - ask user for URL
+        print("\n" + "="*70)
+        print("  FIRST TIME SETUP - CMS_PY Digital Signage Player")
+        print("="*70)
+        print("\nPlayer URL not configured in .env file.")
+        print("\nPlease enter your player URL from cms_dupe:")
+        print("Example: http://127.0.0.1:8000/player/PLAYER-ABC123")
+        print()
+
+        player_url = input("Player URL: ").strip()
+
+        if not player_url:
+            logger.error("No player URL provided")
+            return None
+
+        # Validate URL format
+        if not player_url.startswith('http'):
+            logger.error("Invalid URL format. Must start with http:// or https://")
+            return None
+
+        # Ask if they want to save it
+        print()
+        save = input("Save this URL to .env file? (y/n): ").strip().lower()
+        if save == 'y':
+            try:
+                env_file = Path('.env')
+                if env_file.exists():
+                    with open(env_file, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    # Replace PLAYER_URL line
+                    if 'PLAYER_URL=' in content:
+                        # Find and replace the line
+                        lines = content.split('\n')
+                        for i, line in enumerate(lines):
+                            if line.startswith('PLAYER_URL='):
+                                lines[i] = f'PLAYER_URL={player_url}'
+                                break
+                        content = '\n'.join(lines)
+                    else:
+                        # Add new line
+                        content += f'\nPLAYER_URL={player_url}\n'
+
+                    with open(env_file, 'w', encoding='utf-8') as f:
+                        f.write(content)
+
+                    logger.info("Player URL saved to .env file")
+                    print("✓ Configuration saved!")
+                else:
+                    logger.warning(".env file not found")
+            except Exception as e:
+                logger.error(f"Failed to save player URL: {str(e)}")
+
+        print()
 
     return player_url
 
