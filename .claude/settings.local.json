@@ -12,7 +12,11 @@
       "Bash(py -3:*)",
       "Bash(/c/Users/user/AppData/Local/Programs/Python/Python314/python.exe:*)",
       "Bash(curl:*)",
-      "Bash(python -m pip install:*)"
+      "Bash(python -m pip install:*)",
+      "Bash(venv\\Scripts\\python:*)",
+      "Bash(\"venv/Scripts/python\" -m pip install python-dotenv)",
+      "Bash(C:UsersuserAppDataLocalPythonbinpython.exe -m pip install customtkinter python-dotenv pyautogui)",
+      "Bash(\"C:\\Users\\user\\AppData\\Local\\Python\\bin\\python.exe\" -m pip install customtkinter python-dotenv pyautogui)"
     ],
     "deny": [],
     "ask": []
